@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    tools:context="com.example.bleCentral.CentralActivity">
+
+    <Button
+        android:id="@+id/scan"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:text="스캔"
+        android:visibility="visible" />
+
+
+    <ListView
+        android:id="@+id/listView_device"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible" />
+
+
+    <Button
+        android:id="@+id/bt_disconnect"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:text="연결 해제"
+        android:visibility="invisible" />
+
+    <Button
+        android:id="@+id/bt_write"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:text="데이터 전송"
+        android:visibility="invisible" />
+
+
+    <ListView
+        android:id="@+id/listView_chat"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible" />
+
+</LinearLayout>
