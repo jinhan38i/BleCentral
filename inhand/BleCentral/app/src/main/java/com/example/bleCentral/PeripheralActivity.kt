@@ -109,16 +109,11 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
     }
 
     override fun readMessage(byte: ByteArray, message: String, address: String) {
-        Log.d(
-            TAG,
-            "readMessage() called with: byte = $byte, message = $message, address = $address"
-        )
         messageList.add(message)
         setMessageList()
     }
 
     override fun writeMessage(message: String) {
-        Log.d(TAG, "sendEvent() called with: message = $message")
         messageList.add(message)
         setMessageList()
     }

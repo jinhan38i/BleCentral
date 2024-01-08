@@ -107,8 +107,6 @@ class CentralActivity : AppCompatActivity(), BleListener {
         }
         resultList.add(device)
 
-        Log.d(TAG, "scannedDevice() called with: resultList = ${resultList.size}")
-
         val adapter: ArrayAdapter<ScanResult> = object : ArrayAdapter<ScanResult>(
             this, android.R.layout.simple_list_item_1, resultList
         ) {
@@ -138,7 +136,6 @@ class CentralActivity : AppCompatActivity(), BleListener {
     }
 
     override fun connect(device: BluetoothDevice) {
-        Log.d(TAG, "connect() called with: device = $device")
         connectedDevice = device
         runOnUiThread {
             listViewDevice.visibility = GONE

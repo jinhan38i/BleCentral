@@ -1,34 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context="com.example.foreground.ForegroundActivity">
 
     <Button
-        android:id="@+id/bt_ble_enable"
+        android:id="@+id/bt_start_foreground"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="Enable" />
+        android:text="포그라운드 시작" />
 
     <Button
-        android:id="@+id/bt_scan"
+        android:id="@+id/bt_send_data"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="스캔화면" />
-
+        android:text="데이터 전송" />
 
     <Button
-        android:id="@+id/bt_peripheral"
+        android:id="@+id/bt_stop_foreground"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="Advertising 화면" />
+        android:text="포그라운드 종료" />
 
 
-    <Button
-        android:id="@+id/bt_foreground"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="Foreground" />
 
 </LinearLayout>

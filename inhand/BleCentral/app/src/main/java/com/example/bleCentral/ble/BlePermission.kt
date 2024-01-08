@@ -66,7 +66,7 @@ object BlePermission {
     /**
      * 권한 요청
      */
-    val requestNotificationPermission = { activity: Activity ->
+    val requestPermission = { activity: Activity ->
         if (!checkBlePermission(activity)) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     activity,
@@ -78,14 +78,25 @@ object BlePermission {
                 activity.startActivityForResult(intent, BleUtil.blePermission)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ActivityCompat.requestPermissions(
-                    activity,
-                    arrayOf(
+
+                var permissions = arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_ADVERTISE,
+                    Manifest.permission.BLUETOOTH_SCAN,
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissions = arrayOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.BLUETOOTH_CONNECT,
                         Manifest.permission.BLUETOOTH_ADVERTISE,
                         Manifest.permission.BLUETOOTH_SCAN,
-                    ),
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    )
+
+                }
+                ActivityCompat.requestPermissions(
+                    activity, permissions,
                     BleUtil.blePermission
                 )
             } else {
@@ -102,7 +113,19 @@ object BlePermission {
      * 권한 체크
      */
     val checkBlePermission: (Activity) -> Boolean = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            it.checkCallingOrSelfPermission(
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED && it.checkCallingOrSelfPermission(
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED && it.checkCallingOrSelfPermission(
+                Manifest.permission.BLUETOOTH_ADVERTISE
+            ) == PackageManager.PERMISSION_GRANTED && it.checkCallingOrSelfPermission(
+                Manifest.permission.BLUETOOTH_SCAN,
+            ) == PackageManager.PERMISSION_GRANTED && it.checkCallingOrSelfPermission(
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             it.checkCallingOrSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED && it.checkCallingOrSelfPermission(
