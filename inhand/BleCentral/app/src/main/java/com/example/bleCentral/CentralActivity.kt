@@ -43,16 +43,8 @@ class CentralActivity : AppCompatActivity(), BleListener {
     lateinit var bleUtil: BleUtil
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        bleUtil = BleUtil.getInstance(
-            this, BleUuid(
-                serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
-                charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
-                descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
-            )
-        )
-        BleUtil
         super.onCreate(savedInstanceState)
+        bleUtil = BleUtil.getInstance()
         setContentView(R.layout.activity_central)
         bleUtil.addCentralListener(this)
 

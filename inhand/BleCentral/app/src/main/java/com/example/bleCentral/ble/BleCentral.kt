@@ -10,15 +10,22 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
+import com.example.bleCentral.foreground.ForegroundUtil
 import java.nio.charset.StandardCharsets
 
 @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 @SuppressLint("MissingPermission")
-class BleCentral(private var bluetoothAdapter: BluetoothAdapter, private var bleUuid: BleUuid) {
+class BleCentral(
+    private var context: Context,
+    private var bluetoothAdapter: BluetoothAdapter,
+    private var bleUuid: BleUuid
+) {
 
     companion object {
         private const val TAG = "BleCentral"
@@ -190,12 +197,22 @@ class BleCentral(private var bluetoothAdapter: BluetoothAdapter, private var ble
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            val message = changeToUTF8(value)
-            if (message == "peripheralDisconnect") {
-                disconnect()
-            } else {
-                for (listener in listeners) {
-                    listener.readMessage(value, message, gatt.device.address)
+            Log.d(
+                TAG,
+                "onCharacteristicChanged() called with: gatt = $gatt, characteristic = $characteristic, value = $value, message = ${changeToUTF8(value)}"
+            )
+
+            when (val message = changeToUTF8(value)) {
+                BleUtil.BLE_MESSAGE_PERIPHERAL_DISCONNECT -> disconnect()
+                BleUtil.BLE_MESSAGE_LAUNCH_APP_NOTIFICATION -> ForegroundUtil.appLaunchNotification(context, "inhand")
+                BleUtil.BLE_MESSAGE_LAUNCH_APP_DIRECTLY -> ForegroundUtil.appLaunchDirectly(context)
+                else -> {
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                    for (listener in listeners) {
+                        listener.readMessage(value, message, gatt.device.address)
+                    }
                 }
             }
         }

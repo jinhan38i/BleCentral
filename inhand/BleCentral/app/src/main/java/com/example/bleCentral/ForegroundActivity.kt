@@ -1,33 +1,28 @@
-package com.example.foreground
+package com.example.bleCentral
 
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
 import com.example.blecentral.R
+import com.example.bleCentral.foreground.ForegroundUtil
 
 class ForegroundActivity : AppCompatActivity() {
-    lateinit var foregroundUtil: ForegroundUtil
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        foregroundUtil = ForegroundUtil()
+//        foregroundUtil = ForegroundUtil()
         setContentView(R.layout.activity_foreground)
 
         findViewById<Button>(R.id.bt_start_foreground).setOnClickListener {
-            foregroundUtil.startService(this)
+            ForegroundUtil.startService(this)
         }
         findViewById<Button>(R.id.bt_send_data).setOnClickListener {
-            foregroundUtil.sendMessage(this, "데이터 전송 ")
+            ForegroundUtil.sendMessage(this, "데이터 전송 ")
         }
 
         findViewById<Button>(R.id.bt_stop_foreground).setOnClickListener {
-            foregroundUtil.stopService(this)
+            ForegroundUtil.stopService(this)
         }
     }
 
-    override fun onDestroy() {
-        foregroundUtil.stopService(this)
-        super.onDestroy()
-    }
 }

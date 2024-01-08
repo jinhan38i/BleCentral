@@ -20,7 +20,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bleCentral.ble.BleListener
 import com.example.bleCentral.ble.BleUtil
-import com.example.bleCentral.ble.BleUuid
 import com.example.blecentral.R
 import java.util.Date
 
@@ -33,21 +32,17 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
     private lateinit var btStopAdvertising: Button
     private lateinit var btDisconnect: Button
     private lateinit var btWrite: Button
+    private lateinit var btLaunchApp: Button
+    private lateinit var btLaunchAppDirect: Button
     private lateinit var listViewPeripheralChat: ListView
     private val messageList = ArrayList<String>()
     lateinit var bleUtil: BleUtil
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        bleUtil = BleUtil.getInstance(
-            this, BleUuid(
-                serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
-                charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
-                descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
-            )
-        )
         setContentView(R.layout.activity_peripheral)
+
+        bleUtil = BleUtil.getInstance()
 
         bleUtil.addPeripheralListener(this)
 
@@ -56,6 +51,8 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
         btDisconnect = findViewById(R.id.bt_peripheral_disconnect)
         btWrite = findViewById(R.id.bt_peripheral_write)
         listViewPeripheralChat = findViewById(R.id.listView_peripheral_chat)
+        btLaunchApp = findViewById(R.id.bt_start_app)
+        btLaunchAppDirect = findViewById(R.id.bt_start_app_direct)
 
         btStartAdvertising.setOnClickListener { bleUtil.startAdvertising(this, "watch2") }
         btStopAdvertising.setOnClickListener { bleUtil.stopAdvertising() }
@@ -64,6 +61,14 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
         }
         btWrite.setOnClickListener {
             bleUtil.writePeripheral("P = ${Date().time}")
+        }
+
+        btLaunchApp.setOnClickListener {
+            bleUtil.appLaunchNotificationPeripheral()
+        }
+
+        btLaunchAppDirect.setOnClickListener {
+            bleUtil.appLaunchDirectlyPeripheral()
         }
     }
 
@@ -92,6 +97,8 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             btDisconnect.visibility = VISIBLE
             btWrite.visibility = VISIBLE
             listViewPeripheralChat.visibility = VISIBLE
+            btLaunchApp.visibility = VISIBLE
+            btLaunchAppDirect.visibility = VISIBLE
         }
     }
 
@@ -104,6 +111,8 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             btDisconnect.visibility = GONE
             btWrite.visibility = GONE
             listViewPeripheralChat.visibility = GONE
+            btLaunchApp.visibility = GONE
+            btLaunchAppDirect.visibility = GONE
             messageList.clear()
         }
     }

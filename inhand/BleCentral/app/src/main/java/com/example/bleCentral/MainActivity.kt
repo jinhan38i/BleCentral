@@ -8,9 +8,8 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bleCentral.ble.BlePermission
 import com.example.blecentral.R
-import com.example.foreground.ForegroundActivity
-import com.example.foreground.ForegroundUtil
-import com.example.foreground.MyForegroundService
+import com.example.bleCentral.foreground.ForegroundUtil
+import com.example.bleCentral.foreground.MyForegroundService
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,10 +21,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        ForegroundUtil().initService(
-            applicationContext,
-            Intent(this, MyForegroundService::class.java)
-        )
+        ForegroundUtil.startService(this)
+
         findViewById<Button>(R.id.bt_ble_enable).setOnClickListener {
             BlePermission.changeBluetoothEnable(this)
             findViewById<Button>(R.id.bt_ble_enable).text =

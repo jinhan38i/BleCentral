@@ -241,7 +241,10 @@ class BlePeripheral(
                     serverGattServer?.notifyCharacteristicChanged(device, character, false)
                 }
             }
-            if (message != "peripheralDisconnect") {
+            if (message != BleUtil.BLE_MESSAGE_LAUNCH_APP_NOTIFICATION &&
+                message != BleUtil.BLE_MESSAGE_LAUNCH_APP_DIRECTLY &&
+                message != BleUtil.BLE_MESSAGE_PERIPHERAL_DISCONNECT
+            ) {
                 for (listener in listeners) {
                     listener.writeMessage(message)
                 }
@@ -250,7 +253,7 @@ class BlePeripheral(
     }
 
     fun disconnect() {
-        writeData("peripheralDisconnect")
+        writeData(BleUtil.BLE_MESSAGE_PERIPHERAL_DISCONNECT)
     }
 
     fun changeToUTF8(value: ByteArray): String {

@@ -5,11 +5,13 @@ import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import java.lang.Exception
 
 @SuppressLint("StaticFieldLeak")
 class BleUtil {
@@ -19,14 +21,20 @@ class BleUtil {
         const val blePermission = 335
         const val bleEnable = 336
         private var bleUtil: BleUtil? = null
-        private lateinit var activity: Activity
+        private lateinit var context: Context
         private lateinit var bleUuid: BleUuid
+        const val BLE_MESSAGE_LAUNCH_APP_NOTIFICATION = "launchNotification"
+        const val BLE_MESSAGE_LAUNCH_APP_DIRECTLY = "launchDirectly"
+        const val BLE_MESSAGE_PERIPHERAL_DISCONNECT = "peripheralDisconnect"
 
-        fun getInstance(_activity: Activity, _bleUuid: BleUuid): BleUtil {
-            if (bleUtil == null) {
-                activity = _activity
+        fun getInstance(_context: Context? = null, _bleUuid: BleUuid? = null): BleUtil {
+            if (bleUtil == null && _context != null && _bleUuid != null) {
+                context = _context
                 bleUuid = _bleUuid
                 bleUtil = BleUtil()
+            }
+            if (bleUtil == null) {
+                throw Exception("bleUtil을 생성해주세요.")
             }
             return bleUtil!!
         }
@@ -40,16 +48,16 @@ class BleUtil {
 
     init {
         bluetoothManager =
-            activity.getSystemService(AppCompatActivity.BLUETOOTH_SERVICE) as BluetoothManager
+            context.getSystemService(AppCompatActivity.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager?.adapter
 
         if (bluetoothAdapter == null) {
             Log.d(TAG, "블루투스를 지원하지 않습니다.")
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(activity, "블루투스를 지원하지 않습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "블루투스를 지원하지 않습니다.", Toast.LENGTH_SHORT).show()
             }
         } else {
-            bleCentral = BleCentral(bluetoothAdapter!!, bleUuid)
+            bleCentral = BleCentral(context, bluetoothAdapter!!, bleUuid)
             blePeripheral = BlePeripheral(bluetoothAdapter!!, bluetoothManager!!, bleUuid)
         }
     }
@@ -103,6 +111,10 @@ class BleUtil {
     val writePeripheral = { message: String -> blePeripheral?.writeData(message) }
 
     val disconnectPeripheral = { blePeripheral?.disconnect() }
+
+    val appLaunchNotificationPeripheral = {blePeripheral?.writeData(BLE_MESSAGE_LAUNCH_APP_NOTIFICATION)}
+
+    val appLaunchDirectlyPeripheral = {blePeripheral?.writeData(BLE_MESSAGE_LAUNCH_APP_DIRECTLY)}
 
     //================================================================================================
 }
