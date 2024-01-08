@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bleCentral.ble.BleListener
 import com.example.bleCentral.ble.BleUtil
+import com.example.bleCentral.ble.BleUuid
 import com.example.blecentral.R
 import java.util.Date
 
@@ -34,17 +35,29 @@ class CentralActivity : AppCompatActivity(), BleListener {
     private lateinit var listViewDevice: ListView
     private lateinit var listViewChat: ListView
     private lateinit var scanButton: Button
+    private lateinit var stopScanButton: Button
     private lateinit var disconnectButton: Button
-    lateinit var btWrite: Button
+    private lateinit var btWrite: Button
     private val resultList = ArrayList<ScanResult>()
     private val messageList = ArrayList<String>()
+    lateinit var bleUtil: BleUtil
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        bleUtil = BleUtil.getInstance(
+            this, BleUuid(
+                serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
+                charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
+                descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
+            )
+        )
+        BleUtil
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_central)
-        BleUtil.addCentralListener(this)
+        bleUtil.addCentralListener(this)
 
         scanButton = findViewById(R.id.scan)
+        stopScanButton = findViewById(R.id.bt_stop_scan)
         disconnectButton = findViewById(R.id.bt_disconnect)
         listViewDevice = findViewById(R.id.listView_device)
         listViewChat = findViewById(R.id.listView_chat)
@@ -52,13 +65,16 @@ class CentralActivity : AppCompatActivity(), BleListener {
 
         scanButton.setOnClickListener {
             resultList.clear()
-            BleUtil.startBleScan()
+            bleUtil.startBleScan()
+        }
+        stopScanButton.setOnClickListener {
+            bleUtil.stopBleScan()
         }
         disconnectButton.setOnClickListener {
-            BleUtil.disconnect()
+            bleUtil.disconnectCentral()
         }
         btWrite.setOnClickListener {
-            BleUtil.writeCentral("C = ${Date().time}")
+            bleUtil.writeCentral("C = ${Date().time}")
         }
         if (connectedDevice == null) {
             listViewDevice.visibility = VISIBLE
@@ -76,7 +92,8 @@ class CentralActivity : AppCompatActivity(), BleListener {
     }
 
     override fun onDestroy() {
-        BleUtil.removeCentralListener(this)
+        bleUtil.stopBleScan()
+        bleUtil.removeCentralListener(this)
         super.onDestroy()
     }
 
@@ -103,7 +120,7 @@ class CentralActivity : AppCompatActivity(), BleListener {
                 val d = resultList[position].device
                 textView.text = d.name + " = " + d.address
                 view.setOnClickListener {
-                    BleUtil.connect(this@CentralActivity, d, true)
+                    bleUtil.connectCentral(this@CentralActivity, d, false)
                 }
                 return view
             }
@@ -146,14 +163,6 @@ class CentralActivity : AppCompatActivity(), BleListener {
             messageList.clear()
         }
         showToast("연결 해제")
-    }
-
-    override fun didConnect(device: BluetoothDevice) {
-        Log.d(TAG, "didConnect() called with: device = $device")
-    }
-
-    override fun didDisconnect(bleDevice: BluetoothDevice) {
-        Log.d(TAG, "didDisconnect() called with: bleDevice = $bleDevice")
     }
 
     override fun readMessage(byte: ByteArray, message: String, address: String) {

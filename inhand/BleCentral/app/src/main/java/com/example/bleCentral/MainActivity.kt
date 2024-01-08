@@ -6,8 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.example.bleCentral.ble.BleUtil
-import com.example.bleCentral.ble.BleUuid
+import com.example.bleCentral.ble.BlePermission
 import com.example.blecentral.R
 
 class MainActivity : AppCompatActivity() {
@@ -20,27 +19,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val uuid = BleUuid(
-            serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
-            charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
-            descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
-        )
-        BleUtil.setInstance(this, uuid)
+        findViewById<Button>(R.id.bt_ble_enable).setOnClickListener {
+            BlePermission.changeBluetoothEnable(this)
+            findViewById<Button>(R.id.bt_ble_enable).text =
+                "Enable = ${BlePermission.getBleEnable(this)}"
+        }
         findViewById<Button>(R.id.bt_scan).setOnClickListener {
-            if (!BleUtil.checkBlePermission(this)) return@setOnClickListener
+            if (!BlePermission.checkBlePermission(this)) return@setOnClickListener
             startActivity(Intent(this, CentralActivity::class.java))
         }
         findViewById<Button>(R.id.bt_peripheral).setOnClickListener {
-            if (!BleUtil.checkBlePermission(this)) return@setOnClickListener
+            if (!BlePermission.checkBlePermission(this)) return@setOnClickListener
             startActivity(Intent(this, PeripheralActivity::class.java))
         }
-        findViewById<Button>(R.id.bt_ble_enable).setOnClickListener {
-            BleUtil.changeBluetoothEnable(this)
-            findViewById<Button>(R.id.bt_ble_enable).text = "Enable = ${BleUtil.getBleEnable()}"
-        }
 
-        findViewById<Button>(R.id.bt_ble_enable).text = "Enable = ${BleUtil.getBleEnable()}"
-        BleUtil.requestNotificationPermission(this)
+        findViewById<Button>(R.id.bt_ble_enable).text =
+            "Enable = ${BlePermission.getBleEnable(this)}"
+        BlePermission.requestNotificationPermission(this)
 
     }
 

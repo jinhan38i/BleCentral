@@ -21,15 +21,19 @@ import android.util.Log
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+@Suppress("DEPRECATION")
 @SuppressLint("MissingPermission")
-object BlePeripheral {
+class BlePeripheral(
+    private var bluetoothAdapter: BluetoothAdapter,
+    private var bluetoothManager: BluetoothManager,
+    private var bleUuid: BleUuid
+) {
 
-    private const val TAG = "BlePeripheral"
-    private const val chattingGattUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0"
-    private const val chattingCharacteristicUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1"
-    private const val descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb"
+    companion object {
+        private const val TAG = "BlePeripheral"
+    }
+
     val listeners = ArrayList<BleListener>()
-    var bluetoothAdapter: BluetoothAdapter? = null
     private var connectedChar: BluetoothGattCharacteristic? = null
     var serverGattServer: BluetoothGattServer? = null
     private var serverService: BluetoothGattService? = null
@@ -50,7 +54,7 @@ object BlePeripheral {
      * sleep모드에서 Ble 스캔을 하기 위해서는 ScanFilter를 추가해야 한다.
      */
     private var advertiseData = AdvertiseData.Builder()
-        .addServiceUuid(ParcelUuid(UUID.fromString(chattingGattUuid)))
+        .addServiceUuid(ParcelUuid(UUID.fromString(bleUuid.serviceUuid)))
         .setIncludeDeviceName(true)
         .setIncludeTxPowerLevel(false)
         .build()
@@ -66,31 +70,27 @@ object BlePeripheral {
     }
 
     fun startAdvertising(
-        adapter: BluetoothAdapter,
-        bluetoothManager: BluetoothManager,
         activity: Activity,
         name: String,
     ): Boolean {
-        this.bluetoothAdapter = adapter
-
         if (!isConnected && !isAdvertising) {
             isAdvertising = true
 
             // 이름이 길면 31바이트를 넘어가기 때문에 줄였다.
-            bluetoothAdapter!!.name = name
+            bluetoothAdapter.name = name
             serverGattServer = bluetoothManager.openGattServer(activity, advertiseGattCallback)
 
             serverService = BluetoothGattService(
-                UUID.fromString(chattingGattUuid),
+                UUID.fromString(bleUuid.serviceUuid),
                 BluetoothGattService.SERVICE_TYPE_PRIMARY
             )
             connectedChar = BluetoothGattCharacteristic(
-                UUID.fromString(chattingCharacteristicUuid),
+                UUID.fromString(bleUuid.charUuid),
                 BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 BluetoothGattCharacteristic.PERMISSION_WRITE
             )
             serverDescriptor = BluetoothGattDescriptor(
-                UUID.fromString(descriptorUuid),
+                UUID.fromString(bleUuid.descriptorUuid),
                 BluetoothGattCharacteristic.PERMISSION_WRITE
             )
 
@@ -98,7 +98,7 @@ object BlePeripheral {
             serverService?.addCharacteristic(connectedChar)
             serverGattServer?.addService(serverService)
 
-            bluetoothAdapter!!.bluetoothLeAdvertiser?.startAdvertising(
+            bluetoothAdapter.bluetoothLeAdvertiser?.startAdvertising(
                 settings,
                 advertiseData,
                 advertiseCallback
@@ -111,7 +111,7 @@ object BlePeripheral {
     }
 
     fun stopAdvertising() {
-        bluetoothAdapter!!.bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
+        bluetoothAdapter.bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
     }
 
     fun addListener(bleListener: BleListener) {
@@ -134,7 +134,6 @@ object BlePeripheral {
         listeners.addAll(newListener)
     }
 
-    @JvmStatic
     fun removeAllListener() {
         listeners.clear()
         Log.d(TAG, "removeAllListener() called listener : $listeners")
@@ -154,7 +153,7 @@ object BlePeripheral {
                 "onConnectionStateChange() called with: device = $device, status = $status, newState = $newState"
             )
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                val bluetoothLeAdvertiser = bluetoothAdapter!!.bluetoothLeAdvertiser
+                val bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
                 bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
                 connectDevice = device
                 isConnected = true
@@ -224,8 +223,9 @@ object BlePeripheral {
      * Advertising 이름 변경
      */
     fun changeAdvertisingName(name: String) {
-        bluetoothAdapter?.name = name
+        bluetoothAdapter.name = name
     }
+
 
     /**
      * Peripheral 에서 데이터 보낼 때 사용
@@ -241,10 +241,16 @@ object BlePeripheral {
                     serverGattServer?.notifyCharacteristicChanged(device, character, false)
                 }
             }
-            for (listener in listeners) {
-                listener.writeMessage(message)
+            if (message != "peripheralDisconnect") {
+                for (listener in listeners) {
+                    listener.writeMessage(message)
+                }
             }
         }
+    }
+
+    fun disconnect() {
+        writeData("peripheralDisconnect")
     }
 
     fun changeToUTF8(value: ByteArray): String {

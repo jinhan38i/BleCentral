@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bleCentral.ble.BleListener
 import com.example.bleCentral.ble.BleUtil
+import com.example.bleCentral.ble.BleUuid
 import com.example.blecentral.R
 import java.util.Date
 
@@ -34,13 +35,21 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
     private lateinit var btWrite: Button
     private lateinit var listViewPeripheralChat: ListView
     private val messageList = ArrayList<String>()
-
+    lateinit var bleUtil: BleUtil
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        bleUtil = BleUtil.getInstance(
+            this, BleUuid(
+                serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
+                charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
+                descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
+            )
+        )
         setContentView(R.layout.activity_peripheral)
 
-        BleUtil.addPeripheralListener(this)
+        bleUtil.addPeripheralListener(this)
 
         btStartAdvertising = findViewById(R.id.bt_start_advertising)
         btStopAdvertising = findViewById(R.id.bt_stop_advertising)
@@ -48,16 +57,19 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
         btWrite = findViewById(R.id.bt_peripheral_write)
         listViewPeripheralChat = findViewById(R.id.listView_peripheral_chat)
 
-        btStartAdvertising.setOnClickListener { BleUtil.startAdvertising(this, "watch2") }
-        btStopAdvertising.setOnClickListener { BleUtil.stopAdvertising() }
-        btDisconnect.setOnClickListener { }
+        btStartAdvertising.setOnClickListener { bleUtil.startAdvertising(this, "watch2") }
+        btStopAdvertising.setOnClickListener { bleUtil.stopAdvertising() }
+        btDisconnect.setOnClickListener {
+            bleUtil.disconnectPeripheral()
+        }
         btWrite.setOnClickListener {
-            BleUtil.writePeripheral("P = ${Date().time}")
+            bleUtil.writePeripheral("P = ${Date().time}")
         }
     }
 
     override fun onDestroy() {
-        BleUtil.removePeripheralListener(this)
+        bleUtil.stopAdvertising()
+        bleUtil.removePeripheralListener(this)
         super.onDestroy()
     }
 
@@ -94,14 +106,6 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             listViewPeripheralChat.visibility = GONE
             messageList.clear()
         }
-    }
-
-    override fun didConnect(device: BluetoothDevice) {
-        Log.d(TAG, "didConnect() called with: device = $device")
-    }
-
-    override fun didDisconnect(bleDevice: BluetoothDevice) {
-        Log.d(TAG, "didDisconnect() called with: bleDevice = $bleDevice")
     }
 
     override fun readMessage(byte: ByteArray, message: String, address: String) {

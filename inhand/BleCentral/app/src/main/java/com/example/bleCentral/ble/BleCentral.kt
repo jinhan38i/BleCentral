@@ -16,26 +16,19 @@ import android.os.Looper
 import android.util.Log
 import java.nio.charset.StandardCharsets
 
+@Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 @SuppressLint("MissingPermission")
-object BleCentral {
+class BleCentral(private var bluetoothAdapter: BluetoothAdapter, private var bleUuid: BleUuid) {
 
-    private const val TAG = "BleCentral"
-    private var bluetoothAdapter: BluetoothAdapter? = null
-    var isScanning = false
+    companion object {
+        private const val TAG = "BleCentral"
+    }
+
+    private var isScanning = false
     val listeners = ArrayList<BleListener>()
     private var connectedGatt: BluetoothGatt? = null
     var connectedChar: BluetoothGattCharacteristic? = null
-    lateinit var bleUuid: BleUuid
     var isConnected = false
-
-    /**
-     * 초기화
-     */
-    fun setInstance(bluetoothAdapter: BluetoothAdapter, bleUuid: BleUuid) {
-        this.bluetoothAdapter = bluetoothAdapter
-        this.bleUuid = bleUuid
-        isScanning = false
-    }
 
     fun addListener(bleListener: BleListener) {
         listeners.add(bleListener)
@@ -57,7 +50,6 @@ object BleCentral {
         listeners.addAll(newListener)
     }
 
-    @JvmStatic
     fun removeAllListener() {
         listeners.clear()
     }
@@ -68,7 +60,10 @@ object BleCentral {
     private val leScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
-            Log.d(TAG, "onScanResult: result name : ${result.device.name}, address : ${result.device.address}")
+            Log.d(
+                TAG,
+                "onScanResult: result name : ${result.device.name}, address : ${result.device.address}"
+            )
             if (!result.device.name.isNullOrEmpty()) {
                 for (bleListener in listeners) {
                     bleListener.scannedDevice(result)
@@ -82,9 +77,9 @@ object BleCentral {
      */
     fun startBleScan(scanTime: Long = 10000) {
         if (isScanning) return
-        if (bluetoothAdapter?.bluetoothLeScanner == null) return
-        if (!bluetoothAdapter!!.isEnabled) return
-        bluetoothAdapter!!.bluetoothLeScanner!!.startScan(leScanCallback)
+        if (bluetoothAdapter.bluetoothLeScanner == null) return
+        if (!bluetoothAdapter.isEnabled) return
+        bluetoothAdapter.bluetoothLeScanner!!.startScan(leScanCallback)
 
         Handler(Looper.getMainLooper()).postDelayed({
             stopBleScan()
@@ -96,9 +91,9 @@ object BleCentral {
      */
     fun stopBleScan() {
         isScanning = false
-        if (bluetoothAdapter?.bluetoothLeScanner == null) return
-        if (!bluetoothAdapter!!.isEnabled) return
-        bluetoothAdapter!!.bluetoothLeScanner!!.stopScan(leScanCallback)
+        if (bluetoothAdapter.bluetoothLeScanner == null) return
+        if (!bluetoothAdapter.isEnabled) return
+        bluetoothAdapter.bluetoothLeScanner!!.stopScan(leScanCallback)
         for (bleListener in listeners) {
             bleListener.stopScan()
         }
@@ -172,21 +167,16 @@ object BleCentral {
 
                 BluetoothGatt.GATT_FAILURE -> {
                     for (listener in listeners) {
-                        listener.didDisconnect(gatt!!.device)
+                        listener.disConnect(gatt!!.device)
                     }
                 }
             }
         }
 
-        @Deprecated("Deprecated in Java")
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt?,
             characteristic: BluetoothGattCharacteristic?
         ) {
-            Log.d(
-                TAG,
-                "onCharacteristicChanged() called with: gatt = $gatt, characteristic = $characteristic"
-            )
             if (gatt != null && characteristic != null) {
                 onCharacteristicChanged(gatt, characteristic, characteristic.value)
             }
@@ -200,12 +190,13 @@ object BleCentral {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            Log.d(
-                TAG,
-                "onCharacteristicChanged() called with: gatt = $gatt, characteristic = $characteristic, value = $value"
-            )
-            for (listener in listeners) {
-                listener.readMessage(value, changeToUTF8(value), gatt.device.address)
+            val message = changeToUTF8(value)
+            if (message == "peripheralDisconnect") {
+                disconnect()
+            } else {
+                for (listener in listeners) {
+                    listener.readMessage(value, message, gatt.device.address)
+                }
             }
         }
     }
@@ -213,9 +204,8 @@ object BleCentral {
     /**
      * 디바이스와 BLE 연결
      */
-    fun connectToDevice(activity: Activity, device: BluetoothDevice, autoConnect : Boolean) {
-        Log.d(TAG, "connectToDevice: isConnected : $isConnected")
-        bluetoothAdapter?.getRemoteDevice(device.address)
+    fun connectToDevice(activity: Activity, device: BluetoothDevice, autoConnect: Boolean) {
+        bluetoothAdapter.getRemoteDevice(device.address)
             ?.connectGatt(activity, autoConnect, bluetoothGattCallback)
     }
 

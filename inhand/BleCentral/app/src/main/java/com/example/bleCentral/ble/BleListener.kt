@@ -10,7 +10,5 @@ interface BleListener {
     fun connect(device: BluetoothDevice)
     fun disConnect(device: BluetoothDevice)
     fun writeMessage(message: String)
-    fun didConnect(device: BluetoothDevice)
-    fun didDisconnect(bleDevice: BluetoothDevice)
     fun readMessage(byte: ByteArray, message: String, address: String)
 }
