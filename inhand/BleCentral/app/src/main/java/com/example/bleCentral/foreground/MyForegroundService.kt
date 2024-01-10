@@ -44,17 +44,12 @@ class MyForegroundService : Service() {
         }
 
         override fun writeMessage(message: String) {
-            Log.d(TAG, "writeMessage() called with: message = $message")
             sendBroadcast(Intent(ACTION_BLE_WRITE_MESSAGE).apply {
                 this.putExtra("message", message)
             })
         }
 
         override fun readMessage(byte: ByteArray, message: String, address: String) {
-            Log.d(
-                TAG,
-                "readMessage() called with: byte = $byte, message = $message, address = $address"
-            )
             sendBroadcast(Intent(ACTION_BLE_READ_MESSAGE).apply {
                 this.putExtra("message", message)
             })

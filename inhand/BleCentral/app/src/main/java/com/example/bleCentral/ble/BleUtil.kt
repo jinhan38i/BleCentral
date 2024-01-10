@@ -92,7 +92,14 @@ class BleUtil {
 
     val writeCentral = { message: String -> bleCentral?.writeData(message) }
 
-    val getConnectedGatt = { bleCentral?.connectedGatt }
+    val getConnectedGatt = {
+        if (bleCentral == null || !bleCentral!!.isConnected) {
+            null
+        } else {
+            bleCentral?.connectedGatt
+        }
+
+    }
 
     val connectInfo = { context: Context -> ForegroundUtil.connectInfo(context) }
     //================================================================================================

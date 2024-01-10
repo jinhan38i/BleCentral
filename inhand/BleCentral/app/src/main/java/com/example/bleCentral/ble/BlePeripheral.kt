@@ -73,6 +73,7 @@ class BlePeripheral(
         activity: Activity,
         name: String,
     ): Boolean {
+        Log.d(TAG, "startAdvertising: isConnected : $isConnected, isAdvertising : $isAdvertising ")
         if (!isConnected && !isAdvertising) {
             isAdvertising = true
 
@@ -159,6 +160,7 @@ class BlePeripheral(
                 serverGattServer?.clearServices()
                 serverGattServer?.close()
                 isConnected = false
+                isAdvertising = false
                 for (listener in listeners) {
                     listener.disConnect(device!!)
                 }

@@ -64,7 +64,7 @@ class BleCentral(
     /**
      * 연결이 됐는지 아닌지
      */
-    private var isConnected = false
+    var isConnected = false
 
     /**
      * 자동연결을 시도중인지 아닌지  체크
@@ -132,10 +132,15 @@ class BleCentral(
      * SCAN_MODE_LOW_LATENCY - 가장 높은 듀티 사이클을 사용하여 스캔합. 애플리케이션이 포그라운드에서 실행 중일 때만 이 모드를 사용하는 것을 추천
      * SCAN_MODE_OPPORTUNISTIC - 특별한 Bluetooth LE 스캔 모드. 이 스캔 모드를 사용하는 애플리케이션은 BLE 스캔 자체를 시작하지 않고 수동적으로 다른 스캔 결과를 수신.
      */
-    fun startBleScan(scanTime: Long = 10000) {
-        if (isScanning) return
+    fun startBleScan(scanTime: Long = 10000, auto: Boolean = false) {
+        Log.d(TAG, "startBleScan() called with: scanTime = $scanTime")
         if (bluetoothAdapter.bluetoothLeScanner == null) return
         if (!bluetoothAdapter.isEnabled) return
+
+        if (!auto) {
+            disconnect()
+        }
+        stopBleScan()
 
         // 스캔 필터 설정
         // 특정 serviceUuid만 스캔할 때 사용
@@ -148,6 +153,7 @@ class BleCentral(
 
         // 자동연결 로직, 백그라운드에서도 돌아가야 함
         if (tryAutoConnecting) {
+            Log.d(TAG, "startBleScan: 자동연결 스캔 실행 ")
             bluetoothAdapter.bluetoothLeScanner!!.startScan(
                 filterList,
                 ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build(),
@@ -215,6 +221,7 @@ class BleCentral(
                         listener.disConnect(gatt!!.device)
                     }
 
+                    Log.d(TAG, "onConnectionStateChange: connectedGatt : $connectedGatt")
                     // connectedGatt 값이 있는 경우 자동연결 실행
                     if (connectedGatt != null) {
                         tryAutoConnecting = true
@@ -232,6 +239,10 @@ class BleCentral(
                 BluetoothGatt.GATT_SUCCESS -> {
                     for (service in gatt!!.services) {
                         if (service.uuid.toString() == bleUuid.serviceUuid) {
+                            Log.d(
+                                TAG,
+                                "onServicesDiscovered() called with: isConnected : $isConnected"
+                            )
                             if (!isConnected) {
                                 for (characteristic in service.characteristics) {
                                     if (characteristic.uuid.toString() == bleUuid.charUuid) {
@@ -277,7 +288,6 @@ class BleCentral(
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-
             when (val message = changeToUTF8(value)) {
                 BleUtil.BLE_MESSAGE_PERIPHERAL_DISCONNECT -> disconnect()
                 BleUtil.BLE_MESSAGE_LAUNCH_APP_NOTIFICATION -> ForegroundUtil.appLaunchNotification(
@@ -285,15 +295,10 @@ class BleCentral(
                     "inhandLaunch"
                 )
 
-                BleUtil.BLE_MESSAGE_LAUNCH_APP_DIRECTLY -> ForegroundUtil.appLaunchDirectly(context)
                 else -> {
                     Handler(Looper.getMainLooper()).post {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
-                    Log.d(
-                        TAG,
-                        "onCharacteristicChanged() called with: gatt = $gatt, characteristic = $characteristic, value = $value"
-                    )
                     for (listener in listeners) {
                         listener.readMessage(value, message, gatt.device.address)
                     }
@@ -313,7 +318,7 @@ class BleCentral(
     /**
      * 디바이스와 BLE 연결
      */
-    fun connectToDeviceByName(context: Context, deviceAddress : String, autoConnect: Boolean) {
+    fun connectToDeviceByName(context: Context, deviceAddress: String, autoConnect: Boolean) {
         bluetoothAdapter.getRemoteDevice(deviceAddress)
             ?.connectGatt(context, autoConnect, bluetoothGattCallback)
     }
@@ -371,6 +376,7 @@ class BleCentral(
      * 자동연결 로직
      */
     private fun autoConnect() {
+        Log.d(TAG, "autoConnect() called connectedGatt : $connectedGatt")
         if (connectedGatt == null) return
         startBleScan()
     }

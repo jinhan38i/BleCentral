@@ -71,6 +71,7 @@ class CentralActivity : AppCompatActivity() {
                         val deviceName = intent.getStringExtra("deviceName") ?: ""
                         val deviceAddress = intent.getStringExtra("deviceAddress") ?: ""
                         val rssi = intent.getIntExtra("deviceRssi", 0)
+                        Log.d(TAG, "onReceive: deviceName : $deviceName")
                         for (model in resultList) {
                             if (model.deviceAddress == deviceAddress) {
                                 return@runOnUiThread
