@@ -10,14 +10,13 @@ class ForegroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        foregroundUtil = ForegroundUtil()
         setContentView(R.layout.activity_foreground)
 
         findViewById<Button>(R.id.bt_start_foreground).setOnClickListener {
             ForegroundUtil.startService(this)
         }
         findViewById<Button>(R.id.bt_send_data).setOnClickListener {
-            ForegroundUtil.sendMessage(this, "데이터 전송 ")
+            ForegroundUtil.sendMessageCentral(this, "데이터 전송 ")
         }
 
         findViewById<Button>(R.id.bt_stop_foreground).setOnClickListener {

@@ -5,31 +5,85 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.ScanResult
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.example.bleCentral.MainActivity
+import com.example.bleCentral.ble.BleListener
 import com.example.bleCentral.ble.BleUtil
 import com.example.bleCentral.ble.BleUuid
 import com.example.blecentral.R
 
 
+@SuppressLint("MissingPermission")
 class MyForegroundService : Service() {
+
+    private var listenerCentral = object : BleListener {
+        override fun scannedDevice(scanResult: ScanResult) {
+            sendScannedResult(scanResult)
+        }
+
+        override fun bondedDevice(bondedDevice: BluetoothDevice) {
+        }
+
+        override fun stopScan() {
+            sendBroadcast(Intent(ACTION_BLE_STOP_SCAN))
+        }
+
+        override fun connect(device: BluetoothDevice) {
+            connectCentral()
+        }
+
+        override fun disConnect(device: BluetoothDevice) {
+            disconnectCentral()
+        }
+
+        override fun writeMessage(message: String) {
+            Log.d(TAG, "writeMessage() called with: message = $message")
+            sendBroadcast(Intent(ACTION_BLE_WRITE_MESSAGE).apply {
+                this.putExtra("message", message)
+            })
+        }
+
+        override fun readMessage(byte: ByteArray, message: String, address: String) {
+            Log.d(
+                TAG,
+                "readMessage() called with: byte = $byte, message = $message, address = $address"
+            )
+            sendBroadcast(Intent(ACTION_BLE_READ_MESSAGE).apply {
+                this.putExtra("message", message)
+            })
+        }
+    }
 
     companion object {
         private const val TAG = "MyForegroundService"
+        const val ACTION_BLE_DEVICE_INFO = "bleDeviceInfo"
+        const val ACTION_BLE_STOP_SCAN = "bleStopScan"
+        const val ACTION_BLE_CONNECT_CENTRAL = "bleDeviceConnectCentral"
+        const val ACTION_BLE_DISCONNECT = "bleDeviceDisconnect"
+        const val ACTION_BLE_DEVICE_SCAN_RESULT = "bleDeviceScanResult"
+        const val ACTION_BLE_WRITE_MESSAGE = "bleWriteMessage"
+        const val ACTION_BLE_READ_MESSAGE = "bleReadMessage"
     }
 
-    var bleUtil: BleUtil? = null
+    private var bleUtil: BleUtil? = null
 
     enum class Actions {
         START_SERVICE,
         STOP_SERVICE,
-        MESSAGE,
+        MESSAGE_CENTRAL,
+        CONNECT_INFO,
+        ADVERTISING,
+        START_SCAN,
+        STOP_SCAN,
+        CONNECT,
+        DISCONNECT_CENTRAL,
         APP_LAUNCH
     }
 
@@ -38,7 +92,6 @@ class MyForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand: data : ${intent?.extras}")
         when (intent?.action) {
             Actions.START_SERVICE.toString() -> {
                 val channelId = intent.getStringExtra("channelId") ?: ""
@@ -51,19 +104,32 @@ class MyForegroundService : Service() {
                         descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
                     )
                 )
+                bleUtil!!.addCentralListener(listenerCentral)
             }
 
             Actions.STOP_SERVICE.toString() -> {
+                bleUtil!!.removeCentralListener(listenerCentral)
                 stopSelf()
             }
 
-            Actions.MESSAGE.toString() -> {
-                Log.d(TAG, "onStartCommand: message : ${intent.getStringExtra("data")}")
+            Actions.MESSAGE_CENTRAL.toString() -> {
+                bleUtil!!.writeCentral(intent.getStringExtra("data").toString())
             }
 
-            Actions.APP_LAUNCH.toString() -> {
-                appLaunch("inhand")
+            Actions.CONNECT.toString() -> {
+                bleUtil!!.connectCentralByAddress(
+                    baseContext,
+                    intent.getStringExtra("data").toString(),
+                    false
+                )
             }
+
+            Actions.CONNECT_INFO.toString() -> getConnectInfo()
+            Actions.START_SCAN.toString() -> bleUtil!!.startBleScan()
+            Actions.STOP_SCAN.toString() -> bleUtil!!.stopBleScan()
+            Actions.STOP_SCAN.toString() -> bleUtil!!.stopBleScan()
+            Actions.DISCONNECT_CENTRAL.toString() -> bleUtil!!.disconnectCentral()
+
         }
         return START_NOT_STICKY
     }
@@ -95,7 +161,6 @@ class MyForegroundService : Service() {
             NotificationCompat.Builder(this, channelId)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setOngoing(false)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentTitle("서비스 시작")
@@ -110,28 +175,41 @@ class MyForegroundService : Service() {
         }
     }
 
-
-    @SuppressLint("MissingPermission")
-    fun appLaunch(channelId: String) {
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext,
-            100,
-            Intent(applicationContext, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-        val notification =
-            NotificationCompat.Builder(this, channelId)
-                .setAutoCancel(true)
-                .setContentTitle("앱 실행")
-                .setContentText("클릭해서 앱을 실행시키세요")
-                .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setSmallIcon(R.mipmap.ic_launcher_round)
-                .build()
+    private fun getConnectInfo() {
+        val connectIntent = Intent(ACTION_BLE_DEVICE_INFO)
+        val connectedGatt = bleUtil!!.getConnectedGatt()
+        if (connectedGatt == null) {
+            connectIntent.putExtra("deviceName", "")
+        } else {
+            connectIntent.putExtra("deviceName", connectedGatt.device.name)
+        }
+        sendBroadcast(connectIntent)
+    }
 
 
-        val notificationManager = NotificationManagerCompat.from(this)
-        notificationManager.notify(100, notification)
+    private fun connectCentral() {
+        val connectIntent = Intent(ACTION_BLE_CONNECT_CENTRAL)
+        val connectedGatt = bleUtil!!.getConnectedGatt()
+        if (connectedGatt == null) {
+            connectIntent.putExtra("deviceName", "")
+            connectIntent.putExtra("deviceAddress", "")
+        } else {
+            connectIntent.putExtra("deviceName", connectedGatt.device.name)
+            connectIntent.putExtra("deviceAddress", connectedGatt.device.address)
+        }
+        sendBroadcast(connectIntent)
+    }
+
+    private fun disconnectCentral() {
+        sendBroadcast(Intent(ACTION_BLE_DISCONNECT))
+    }
+
+    private fun sendScannedResult(scanResult: ScanResult) {
+        val connectIntent = Intent(ACTION_BLE_DEVICE_SCAN_RESULT)
+        connectIntent.putExtra("deviceName", scanResult.device.name)
+        connectIntent.putExtra("deviceAddress", scanResult.device.address)
+        connectIntent.putExtra("deviceRssi", scanResult.rssi)
+        sendBroadcast(connectIntent)
     }
 
 }

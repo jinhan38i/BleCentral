@@ -30,7 +30,6 @@ object BlePermission {
             activity.getSystemService(AppCompatActivity.BLUETOOTH_SERVICE) as BluetoothManager
         val bluetoothAdapter = bluetoothManager.adapter
         if (bluetoothAdapter == null) {
-            Log.d(TAG, "블루투스를 지원하지 않습니다.")
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(activity, "블루투스를 지원하지 않습니다.", Toast.LENGTH_SHORT).show()
             }

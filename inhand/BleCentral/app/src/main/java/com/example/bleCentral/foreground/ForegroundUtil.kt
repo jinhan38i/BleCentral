@@ -2,14 +2,17 @@ package com.example.bleCentral.foreground
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.bleCentral.MainActivity
 import com.example.blecentral.R
+
 
 object ForegroundUtil {
 
@@ -26,7 +29,7 @@ object ForegroundUtil {
             context,
             MyForegroundService.Actions.START_SERVICE.toString(),
             mapOf(
-                "channelId" to "inhand",
+                "channelId" to "inhandService",
                 "channelName" to "inhandPlus"
             ),
             needCheck = false
@@ -36,10 +39,10 @@ object ForegroundUtil {
     /**
      * 문자열 메세지 전송
      */
-    fun sendMessage(context: Context, data: String) {
+    fun sendMessageCentral(context: Context, data: String) {
         sendService(
             context,
-            MyForegroundService.Actions.MESSAGE.toString(),
+            MyForegroundService.Actions.MESSAGE_CENTRAL.toString(),
             mapOf("data" to data)
         )
     }
@@ -55,6 +58,47 @@ object ForegroundUtil {
         )
     }
 
+    fun connectInfo(context: Context) {
+        sendService(
+            context,
+            MyForegroundService.Actions.CONNECT_INFO.toString(),
+            mapOf("data" to "")
+        )
+    }
+
+    fun startScan(context: Context) {
+        sendService(
+            context,
+            MyForegroundService.Actions.START_SCAN.toString(),
+            mapOf("data" to "")
+        )
+    }
+
+
+    fun stopScan(context: Context) {
+        sendService(
+            context,
+            MyForegroundService.Actions.STOP_SCAN.toString(),
+            mapOf("data" to "")
+        )
+    }
+
+    fun connectCentralByAddress(context: Context, deviceAddress: String, autoConnect: Boolean) {
+        sendService(
+            context,
+            MyForegroundService.Actions.CONNECT.toString(),
+            mapOf("data" to deviceAddress)
+        )
+    }
+
+
+    fun disconnectCentral(context: Context) {
+        sendService(
+            context,
+            MyForegroundService.Actions.DISCONNECT_CENTRAL.toString(),
+            mapOf("data" to "")
+        )
+    }
 
     /**
      * MyForegroundService와 통신
@@ -67,7 +111,6 @@ object ForegroundUtil {
     ) {
         if (needCheck) {
             if (!isMyServiceRunning(context, MyForegroundService::class.java)) {
-                Log.d(TAG, "sendService: 서비스 실행 안됨")
                 return
             }
         }
@@ -100,27 +143,35 @@ object ForegroundUtil {
         return false
     }
 
-
-    /**
-     * 앱 실행 바로 실행
-     */
-    fun appLaunchDirectly(context: Context) {}
-
     /**
      * 앱 실행 알림 호출
      */
     @SuppressLint("MissingPermission")
     fun appLaunchNotification(context: Context, channelId: String) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = context.getSystemService(
+                NotificationManager::class.java
+            )
+            val channel = NotificationChannel(
+                channelId,
+                "channelName",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager?.createNotificationChannel(channel)
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             context,
             100,
             Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
         val notification =
             NotificationCompat.Builder(context, channelId)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setContentTitle("앱 실행")
                 .setContentText("바디")
                 .setContentIntent(pendingIntent)

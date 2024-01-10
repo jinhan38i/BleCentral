@@ -103,7 +103,6 @@ class BlePeripheral(
                 advertiseData,
                 advertiseCallback
             )
-            Log.d(TAG, "startAdvertising: pppp advertising")
             return true
         } else {
             return false
@@ -136,7 +135,6 @@ class BlePeripheral(
 
     fun removeAllListener() {
         listeners.clear()
-        Log.d(TAG, "removeAllListener() called listener : $listeners")
     }
 
     /**
@@ -148,10 +146,6 @@ class BlePeripheral(
          * 연결 상태 변경되면 진입
          */
         override fun onConnectionStateChange(device: BluetoothDevice?, status: Int, newState: Int) {
-            Log.d(
-                TAG,
-                "onConnectionStateChange() called with: device = $device, status = $status, newState = $newState"
-            )
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 val bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
                 bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
@@ -242,7 +236,6 @@ class BlePeripheral(
                 }
             }
             if (message != BleUtil.BLE_MESSAGE_LAUNCH_APP_NOTIFICATION &&
-                message != BleUtil.BLE_MESSAGE_LAUNCH_APP_DIRECTLY &&
                 message != BleUtil.BLE_MESSAGE_PERIPHERAL_DISCONNECT
             ) {
                 for (listener in listeners) {

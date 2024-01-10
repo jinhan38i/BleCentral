@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 
 interface BleListener {
-    fun scannedDevice(device: ScanResult)
+    fun scannedDevice(scanResult: ScanResult)
     fun bondedDevice(bondedDevice: BluetoothDevice)
     fun stopScan()
     fun connect(device: BluetoothDevice)

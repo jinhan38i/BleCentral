@@ -7,6 +7,8 @@ import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bleCentral.ble.BlePermission
+import com.example.bleCentral.ble.BleUtil
+import com.example.bleCentral.ble.BleUuid
 import com.example.blecentral.R
 import com.example.bleCentral.foreground.ForegroundUtil
 import com.example.bleCentral.foreground.MyForegroundService
@@ -22,7 +24,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         ForegroundUtil.startService(this)
-
+        BleUtil.getInstance(
+            baseContext, BleUuid(
+                serviceUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d0",
+                charUuid = "fec26ec4-6d71-4442-9f81-55bc21d658d1",
+                descriptorUuid = "00002902-0000-1000-8000-00805f9b34fb",
+            )
+        )
         findViewById<Button>(R.id.bt_ble_enable).setOnClickListener {
             BlePermission.changeBluetoothEnable(this)
             findViewById<Button>(R.id.bt_ble_enable).text =
@@ -55,18 +63,10 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Log.d(
-            TAG,
-            "onRequestPermissionsResult() called with: requestCode = $requestCode, permissions = $permissions, grantResults = $grantResults"
-        )
     }
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Log.d(
-            TAG,
-            "onActivityResult() called with: requestCode = $requestCode, resultCode = $resultCode, data = $data"
-        )
     }
 }

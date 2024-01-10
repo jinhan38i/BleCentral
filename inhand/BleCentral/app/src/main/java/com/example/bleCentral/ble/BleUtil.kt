@@ -8,9 +8,9 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.bleCentral.foreground.ForegroundUtil
 import java.lang.Exception
 
 @SuppressLint("StaticFieldLeak")
@@ -20,11 +20,10 @@ class BleUtil {
         private const val TAG = "BleUtil"
         const val blePermission = 335
         const val bleEnable = 336
-        private var bleUtil: BleUtil? = null
+        var bleUtil: BleUtil? = null
         private lateinit var context: Context
         private lateinit var bleUuid: BleUuid
         const val BLE_MESSAGE_LAUNCH_APP_NOTIFICATION = "launchNotification"
-        const val BLE_MESSAGE_LAUNCH_APP_DIRECTLY = "launchDirectly"
         const val BLE_MESSAGE_PERIPHERAL_DISCONNECT = "peripheralDisconnect"
 
         fun getInstance(_context: Context? = null, _bleUuid: BleUuid? = null): BleUtil {
@@ -52,7 +51,6 @@ class BleUtil {
         bluetoothAdapter = bluetoothManager?.adapter
 
         if (bluetoothAdapter == null) {
-            Log.d(TAG, "블루투스를 지원하지 않습니다.")
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(context, "블루투스를 지원하지 않습니다.", Toast.LENGTH_SHORT).show()
             }
@@ -82,14 +80,21 @@ class BleUtil {
 
     val stopBleScan = { bleCentral?.stopBleScan() }
 
-    val connectCentral = { activity: Activity, device: BluetoothDevice, autoConnect: Boolean ->
-        bleCentral?.connectToDevice(activity, device, autoConnect)
+    val connectCentral = { context: Context, device: BluetoothDevice, autoConnect: Boolean ->
+        bleCentral?.connectToDevice(context, device, autoConnect)
+    }
+
+    val connectCentralByAddress = { context: Context, deviceAddress: String, autoConnect: Boolean ->
+        bleCentral?.connectToDeviceByName(context, deviceAddress, autoConnect)
     }
 
     val disconnectCentral = { bleCentral?.disconnect() }
 
     val writeCentral = { message: String -> bleCentral?.writeData(message) }
 
+    val getConnectedGatt = { bleCentral?.connectedGatt }
+
+    val connectInfo = { context: Context -> ForegroundUtil.connectInfo(context) }
     //================================================================================================
 
 
@@ -112,9 +117,8 @@ class BleUtil {
 
     val disconnectPeripheral = { blePeripheral?.disconnect() }
 
-    val appLaunchNotificationPeripheral = {blePeripheral?.writeData(BLE_MESSAGE_LAUNCH_APP_NOTIFICATION)}
-
-    val appLaunchDirectlyPeripheral = {blePeripheral?.writeData(BLE_MESSAGE_LAUNCH_APP_DIRECTLY)}
+    val appLaunchNotificationPeripheral =
+        { blePeripheral?.writeData(BLE_MESSAGE_LAUNCH_APP_NOTIFICATION) }
 
     //================================================================================================
 }

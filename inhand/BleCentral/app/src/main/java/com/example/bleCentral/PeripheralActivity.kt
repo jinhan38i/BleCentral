@@ -33,7 +33,6 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
     private lateinit var btDisconnect: Button
     private lateinit var btWrite: Button
     private lateinit var btLaunchApp: Button
-    private lateinit var btLaunchAppDirect: Button
     private lateinit var listViewPeripheralChat: ListView
     private val messageList = ArrayList<String>()
     lateinit var bleUtil: BleUtil
@@ -52,7 +51,6 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
         btWrite = findViewById(R.id.bt_peripheral_write)
         listViewPeripheralChat = findViewById(R.id.listView_peripheral_chat)
         btLaunchApp = findViewById(R.id.bt_start_app)
-        btLaunchAppDirect = findViewById(R.id.bt_start_app_direct)
 
         btStartAdvertising.setOnClickListener { bleUtil.startAdvertising(this, "watch2") }
         btStopAdvertising.setOnClickListener { bleUtil.stopAdvertising() }
@@ -67,9 +65,6 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             bleUtil.appLaunchNotificationPeripheral()
         }
 
-        btLaunchAppDirect.setOnClickListener {
-            bleUtil.appLaunchDirectlyPeripheral()
-        }
     }
 
     override fun onDestroy() {
@@ -78,18 +73,16 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
         super.onDestroy()
     }
 
-    override fun scannedDevice(device: ScanResult) {
+    override fun scannedDevice(scanResult: ScanResult) {
     }
 
     override fun bondedDevice(bondedDevice: BluetoothDevice) {
-        Log.d(TAG, "bondedDevice: ")
     }
 
     override fun stopScan() {
     }
 
     override fun connect(device: BluetoothDevice) {
-        Log.d(TAG, "connect() called with: device = $device")
         showToast("연결 성공")
         runOnUiThread {
             btStartAdvertising.visibility = GONE
@@ -98,13 +91,10 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             btWrite.visibility = VISIBLE
             listViewPeripheralChat.visibility = VISIBLE
             btLaunchApp.visibility = VISIBLE
-            btLaunchAppDirect.visibility = VISIBLE
         }
     }
 
     override fun disConnect(device: BluetoothDevice) {
-        Log.d(TAG, "disConnect() called with: device = $device")
-        showToast("연결 해제")
         runOnUiThread {
             btStartAdvertising.visibility = VISIBLE
             btStopAdvertising.visibility = VISIBLE
@@ -112,9 +102,9 @@ class PeripheralActivity : AppCompatActivity(), BleListener {
             btWrite.visibility = GONE
             listViewPeripheralChat.visibility = GONE
             btLaunchApp.visibility = GONE
-            btLaunchAppDirect.visibility = GONE
             messageList.clear()
         }
+        showToast("연결 해제")
     }
 
     override fun readMessage(byte: ByteArray, message: String, address: String) {
