@@ -103,10 +103,17 @@ class BleCentral(
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
 
+            Log.d(
+                TAG,
+                "onScanResult: name : ${result.device.name}, address : ${result.device.address}"
+            
+            )
+
             if (!result.device.name.isNullOrEmpty()) {
                 if (tryAutoConnecting) {
                     if (connectedGatt != null && result.device.name == connectedGatt!!.device.name) {
                         stopBleScan()
+                        Log.d(TAG, "onConnectionStateChange: scan stop 4")
                         connectToDevice(context, result.device, false)
                     }
                     return
@@ -133,14 +140,17 @@ class BleCentral(
      * SCAN_MODE_OPPORTUNISTIC - 특별한 Bluetooth LE 스캔 모드. 이 스캔 모드를 사용하는 애플리케이션은 BLE 스캔 자체를 시작하지 않고 수동적으로 다른 스캔 결과를 수신.
      */
     fun startBleScan(scanTime: Long = 10000, auto: Boolean = false) {
-        Log.d(TAG, "startBleScan() called with: scanTime = $scanTime")
+        Log.d(
+            TAG,
+            "startBleScan() called with: scanTime = $scanTime, tryAutoConnecting : $tryAutoConnecting"
+        )
         if (bluetoothAdapter.bluetoothLeScanner == null) return
         if (!bluetoothAdapter.isEnabled) return
 
-        if (!auto) {
-            disconnect()
+        if (isScanning) {
+            stopBleScan()
+            Log.d(TAG, "onConnectionStateChange: scan stop 2")
         }
-        stopBleScan()
 
         // 스캔 필터 설정
         // 특정 serviceUuid만 스캔할 때 사용
@@ -150,6 +160,7 @@ class BleCentral(
                 .setServiceUuid(ParcelUuid.fromString(bleUuid.serviceUuid))
                 .build(),
         )
+        Log.d(TAG, "startBleScan: filter 설정 tryAutoConnecting : $tryAutoConnecting")
 
         // 자동연결 로직, 백그라운드에서도 돌아가야 함
         if (tryAutoConnecting) {
@@ -162,6 +173,7 @@ class BleCentral(
             return
         }
 
+        Log.d(TAG, "startBleScan: 일반 스캔 진행")
         // 자동연결이 아닌 경우
         // 백그라운드에서 실행 불가
         bluetoothAdapter.bluetoothLeScanner!!.startScan(
@@ -171,6 +183,7 @@ class BleCentral(
         )
         Handler(Looper.getMainLooper()).postDelayed({
             stopBleScan()
+            Log.d(TAG, "onConnectionStateChange: scan stop 3")
         }, scanTime)
 
     }
@@ -179,6 +192,7 @@ class BleCentral(
      * 스캔 중지
      */
     fun stopBleScan() {
+        Log.d(TAG, "stopBleScan() called")
         isScanning = false
         if (bluetoothAdapter.bluetoothLeScanner == null) return
         if (!bluetoothAdapter.isEnabled) return
@@ -204,6 +218,7 @@ class BleCentral(
                  */
                 BluetoothProfile.STATE_CONNECTED -> {
                     stopBleScan()
+                    Log.d(TAG, "onConnectionStateChange: scan stop 1")
                     gatt?.discoverServices()
                 }
 
@@ -237,7 +252,9 @@ class BleCentral(
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> {
+                    Log.d(TAG, "onServicesDiscovered: GATT_SUCCESS")
                     for (service in gatt!!.services) {
+                        Log.d(TAG, "onServicesDiscovered: service : ${service.uuid}")
                         if (service.uuid.toString() == bleUuid.serviceUuid) {
                             Log.d(
                                 TAG,
@@ -247,7 +264,7 @@ class BleCentral(
                                 for (characteristic in service.characteristics) {
                                     if (characteristic.uuid.toString() == bleUuid.charUuid) {
                                         gatt.setCharacteristicNotification(characteristic, true)
-                                        tryAutoConnecting = false
+                                        Log.d(TAG, "onServicesDiscovered: startBleScan try false 처리 1111")
                                         connectedGatt = gatt
                                         connectedChar = characteristic
                                         isConnected = true
@@ -256,9 +273,10 @@ class BleCentral(
                                         }
                                     }
                                 }
-                            } else {
-                                gatt.disconnect()
                             }
+//                            else {
+//                                gatt.disconnect()
+//                            }
                         }
                     }
                 }
@@ -332,6 +350,7 @@ class BleCentral(
         connectedGatt?.disconnect()
         connectedGatt = null
         tryAutoConnecting = false
+        Log.d(TAG, "onServicesDiscovered: startBleScan try false 처리 2222")
     }
 
     /**
@@ -378,6 +397,6 @@ class BleCentral(
     private fun autoConnect() {
         Log.d(TAG, "autoConnect() called connectedGatt : $connectedGatt")
         if (connectedGatt == null) return
-        startBleScan()
+        startBleScan(auto = true)
     }
 }

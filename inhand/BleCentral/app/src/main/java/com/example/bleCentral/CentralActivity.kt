@@ -71,7 +71,6 @@ class CentralActivity : AppCompatActivity() {
                         val deviceName = intent.getStringExtra("deviceName") ?: ""
                         val deviceAddress = intent.getStringExtra("deviceAddress") ?: ""
                         val rssi = intent.getIntExtra("deviceRssi", 0)
-                        Log.d(TAG, "onReceive: deviceName : $deviceName")
                         for (model in resultList) {
                             if (model.deviceAddress == deviceAddress) {
                                 return@runOnUiThread
@@ -185,7 +184,7 @@ class CentralActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        ForegroundUtil.stopScan(this)
+//        ForegroundUtil.stopScan(this)
         unregisterReceiver(bleReceiver)
         super.onPause()
     }

@@ -16,8 +16,11 @@ import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
+import android.widget.Toast
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
@@ -36,7 +39,6 @@ class BlePeripheral(
     val listeners = ArrayList<BleListener>()
     private var connectedChar: BluetoothGattCharacteristic? = null
     var serverGattServer: BluetoothGattServer? = null
-    private var serverService: BluetoothGattService? = null
     private var serverDescriptor: BluetoothGattDescriptor? = null
     var connectDevice: BluetoothDevice? = null
     var isConnected = false
@@ -74,17 +76,28 @@ class BlePeripheral(
         name: String,
     ): Boolean {
         Log.d(TAG, "startAdvertising: isConnected : $isConnected, isAdvertising : $isAdvertising ")
-        if (!isConnected && !isAdvertising) {
+        if (isConnected) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(activity, "연결된 상태", Toast.LENGTH_SHORT).show()
+            }
+        }
+        if (!isConnected) {
+            stopAdvertising()
             isAdvertising = true
 
             // 이름이 길면 31바이트를 넘어가기 때문에 줄였다.
             bluetoothAdapter.name = name
-            serverGattServer = bluetoothManager.openGattServer(activity, advertiseGattCallback)
 
-            serverService = BluetoothGattService(
+            if (serverGattServer == null) {
+                serverGattServer = bluetoothManager.openGattServer(activity, advertiseGattCallback)
+            }
+            Log.d(TAG, "startAdvertising: 111")
+
+            val serverService = BluetoothGattService(
                 UUID.fromString(bleUuid.serviceUuid),
                 BluetoothGattService.SERVICE_TYPE_PRIMARY
             )
+
             connectedChar = BluetoothGattCharacteristic(
                 UUID.fromString(bleUuid.charUuid),
                 BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
@@ -96,9 +109,8 @@ class BlePeripheral(
             )
 
             connectedChar?.addDescriptor(serverDescriptor)
-            serverService?.addCharacteristic(connectedChar)
+            serverService.addCharacteristic(connectedChar)
             serverGattServer?.addService(serverService)
-
             bluetoothAdapter.bluetoothLeAdvertiser?.startAdvertising(
                 settings,
                 advertiseData,
@@ -159,8 +171,10 @@ class BlePeripheral(
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 serverGattServer?.clearServices()
                 serverGattServer?.close()
+                connectDevice = null
                 isConnected = false
                 isAdvertising = false
+                Log.d(TAG, "onConnectionStateChange: listeners : ${listeners.size}")
                 for (listener in listeners) {
                     listener.disConnect(device!!)
                 }
